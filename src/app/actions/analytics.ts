@@ -10,7 +10,7 @@ export async function getAnalyticsData() {
         }
     });
 
-    const activeDeals = deals.filter(d => (d.status === "ACTIVE" || d.status === "LEAD") && d.stage !== "ARCHIVED");
+    const activeDeals = deals.filter(d => (d.status === "ACTIVE" || d.status === "LEAD"));
     const closedWon = deals.filter(d => d.status === "CLOSED_WON");
     const closedLost = deals.filter(d => d.status === "CLOSED_LOST");
 
@@ -23,11 +23,11 @@ export async function getAnalyticsData() {
     let totalDurationDays = 0;
     let durationCount = 0;
 
-    for (const deal of closedWon) {
-        const mandateEntry = deal.history.find(h => h.stage === 'KICKOFF' || h.stage === 'MANDATE');
+    for (const deal of closedWon as any[]) {
+        const mandateEntry = deal.history.find((h: any) => h.stage === 'MANDATE');
         const startDate = mandateEntry ? new Date(mandateEntry.enteredAt).getTime() : new Date(deal.createdAt).getTime();
 
-        const closingEntry = deal.history.find(h => h.stage === 'CLOSING') || deal.history[deal.history.length - 1];
+        const closingEntry = deal.history.find((h: any) => h.stage === 'CLOSING') || deal.history[deal.history.length - 1];
         const endDate = closingEntry ? new Date(closingEntry.enteredAt).getTime() : new Date(deal.updatedAt).getTime();
 
         const days = (endDate - startDate) / (1000 * 60 * 60 * 24);

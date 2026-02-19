@@ -18,12 +18,13 @@ import { Plus, Building2, Globe, MapPin, Sparkles, Loader2 } from "lucide-react"
 import { createOrganization } from "@/app/actions/organizations";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
+import { ORGANIZATION_TYPE_LABELS } from "@/lib/constants";
 
 export function CreateOrganizationDialog() {
     const [open, setOpen] = useState(false);
     const [isPending, setIsPending] = useState(false);
     const [isAiLoading, setIsAiLoading] = useState(false);
-    const [type, setType] = useState("BUYER");
+    const [type, setType] = useState("STRATEGIC_INVESTOR");
     const [aiUrl, setAiUrl] = useState("");
     const formRef = useRef<HTMLFormElement>(null);
 
@@ -86,8 +87,11 @@ export function CreateOrganizationDialog() {
 
             if (d.type) {
                 const typeMap: Record<string, string> = {
-                    "BUYER": "BUYER", "PE_FUND": "PE_FUND", "VC": "VC",
-                    "TARGET": "TARGET", "OTHER": "OTHER"
+                    "BUYER": "STRATEGIC_INVESTOR",
+                    "PE_FUND": "FINANCIAL_INVESTOR",
+                    "VC": "FINANCIAL_INVESTOR",
+                    "TARGET": "STRATEGIC_INVESTOR",
+                    "OTHER": "OTHER"
                 };
                 setType(typeMap[d.type] || "OTHER");
             }
@@ -131,8 +135,8 @@ export function CreateOrganizationDialog() {
         }
     }
 
-    const isStrategic = type === "BUYER" || type === "TARGET";
-    const isFinancial = type === "PE_FUND" || type === "VC" || type === "OTHER";
+    const isStrategic = type === "STRATEGIC_INVESTOR";
+    const isFinancial = type === "FINANCIAL_INVESTOR";
 
     return (
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
@@ -208,11 +212,9 @@ export function CreateOrganizationDialog() {
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="BUYER">Stratege (Buyer)</SelectItem>
-                                <SelectItem value="TARGET">Unternehmen (Target)</SelectItem>
-                                <SelectItem value="PE_FUND">Private Equity (FI)</SelectItem>
-                                <SelectItem value="VC">Venture Capital</SelectItem>
-                                <SelectItem value="OTHER">Family Office / Andere</SelectItem>
+                                {Object.entries(ORGANIZATION_TYPE_LABELS).map(([value, label]) => (
+                                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>

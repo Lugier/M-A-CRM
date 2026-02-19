@@ -8,13 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 
-const TYPE_LABELS: Record<string, string> = {
-    TARGET: "Target",
-    BUYER: "Käufer",
-    VC: "VC",
-    PE_FUND: "PE Fund",
-    OTHER: "Sonstige",
-};
+import { ORGANIZATION_TYPE_LABELS } from "@/lib/constants";
 
 type InvestorOrg = {
     id: string;
@@ -68,16 +62,25 @@ export function InvestorTable({
                         />
                     </div>
                     <div className="flex gap-2">
-                        {["ALL", "BUYER", "VC", "PE_FUND"].map((t) => (
+                        <button
+                            onClick={() => setTypeFilter("ALL")}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${typeFilter === "ALL"
+                                ? "bg-blue-600 text-white"
+                                : "bg-white text-slate-500 hover:bg-slate-50 border border-slate-200"
+                                }`}
+                        >
+                            Alle
+                        </button>
+                        {Object.entries(ORGANIZATION_TYPE_LABELS).map(([value, label]) => (
                             <button
-                                key={t}
-                                onClick={() => setTypeFilter(t)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${typeFilter === t
-                                        ? "bg-blue-600 text-white"
-                                        : "bg-white text-slate-500 hover:bg-slate-50 border border-slate-200"
+                                key={value}
+                                onClick={() => setTypeFilter(value)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${typeFilter === value
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-white text-slate-500 hover:bg-slate-50 border border-slate-200"
                                     }`}
                             >
-                                {t === "ALL" ? "Alle" : TYPE_LABELS[t] || t}
+                                {label}
                             </button>
                         ))}
                     </div>
@@ -117,7 +120,7 @@ export function InvestorTable({
                                         variant="secondary"
                                         className="bg-slate-100 text-slate-600 border-none text-[10px] font-bold uppercase"
                                     >
-                                        {TYPE_LABELS[inv.type] || inv.type}
+                                        {ORGANIZATION_TYPE_LABELS[inv.type] || inv.type}
                                     </Badge>
                                 </td>
                                 <td className="px-6 py-4 text-slate-600">

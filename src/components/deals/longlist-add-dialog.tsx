@@ -40,6 +40,7 @@ import { createUnifiedInvestorAction, getOrganizationDetailsAction } from "@/app
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { ORGANIZATION_TYPE_LABELS } from "@/lib/constants";
 
 interface Organization {
     id: string;
@@ -76,7 +77,7 @@ export function LonglistAddDialog({
         industry: "",
         description: "",
         address: "",
-        type: "BUYER",
+        type: "STRATEGIC_INVESTOR",
         website: "",
         ticketSizeMin: "",
         ticketSizeMax: "",
@@ -121,7 +122,7 @@ export function LonglistAddDialog({
                 aum: d.aum ? String(d.aum) : prev.aum,
                 revenue: d.revenue ? String(d.revenue) : prev.revenue,
                 employees: d.employees ? String(d.employees) : prev.employees,
-                type: d.type || prev.type
+                type: (d.type === "BUYER" ? "STRATEGIC_INVESTOR" : d.type === "PE_FUND" ? "FINANCIAL_INVESTOR" : d.type) || prev.type
             }));
             toast.success("AI hat alle verfügbaren Firmeninformationen geladen!");
         } catch (e) {
@@ -229,7 +230,7 @@ export function LonglistAddDialog({
             industry: "",
             description: "",
             address: "",
-            type: "BUYER",
+            type: "STRATEGIC_INVESTOR",
             website: "",
             ticketSizeMin: "",
             ticketSizeMax: "",
@@ -422,19 +423,14 @@ export function LonglistAddDialog({
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Typ</Label>
-                                    <Select
-                                        value={newOrganization.type}
-                                        onValueChange={(v: string) => setNewOrganization({ ...newOrganization, type: v })}
-                                    >
-                                        <SelectTrigger className="h-10 bg-slate-50">
+                                    <Select value={newOrganization.type} onValueChange={(v) => setNewOrganization({ ...newOrganization, type: v })}>
+                                        <SelectTrigger className="bg-slate-50 border-slate-200">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="BUYER">Stratege (Buyer)</SelectItem>
-                                            <SelectItem value="TARGET">Unternehmen (Target)</SelectItem>
-                                            <SelectItem value="PE_FUND">Private Equity (FI)</SelectItem>
-                                            <SelectItem value="VC">Venture Capital</SelectItem>
-                                            <SelectItem value="OTHER">Family Office / Andere</SelectItem>
+                                            {Object.entries(ORGANIZATION_TYPE_LABELS).map(([value, label]) => (
+                                                <SelectItem key={value} value={value}>{label}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -462,7 +458,7 @@ export function LonglistAddDialog({
                                     />
                                 </div>
 
-                                {(newOrganization.type === "BUYER" || newOrganization.type === "TARGET") ? (
+                                {(newOrganization.type === "STRATEGIC_INVESTOR") ? (
                                     <>
                                         <div className="space-y-2">
                                             <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Umsatz (€)</Label>

@@ -2,10 +2,18 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { ActionResponse, OrganizationType } from "@/lib/types";
+// import { OrganizationType } from "@prisma/client"; // Decoupled for migration safety
 
-export async function getOrganizations() {
+export async function getOrganizations(filter?: { type?: string }) {
     try {
+        const where: any = {};
+        if (filter?.type && filter.type !== "ALL") {
+            where.type = filter.type;
+        }
+
         return await prisma.organization.findMany({
+            where,
             include: {
                 _count: {
                     select: { contacts: true, investorDeals: true }
@@ -29,6 +37,22 @@ export async function getOrganizationById(id: string) {
                     include: {
                         deal: true
                     }
+                },
+                activities: {
+                    include: {
+                        user: true
+                    },
+                    orderBy: {
+                        createdAt: 'desc'
+                    }
+                },
+                comments: {
+                    include: {
+                        user: true
+                    },
+                    orderBy: {
+                        createdAt: 'desc'
+                    }
                 }
             }
         });
@@ -38,10 +62,10 @@ export async function getOrganizationById(id: string) {
     }
 }
 
-export async function createOrganization(formData: FormData) {
+export async function createOrganization(formData: FormData): Promise<ActionResponse<{ id: string }>> {
     const name = formData.get("name") as string;
     const industry = formData.get("industry") as string;
-    const type = formData.get("type") as string;
+    const type = formData.get("type") as OrganizationType;
     const address = formData.get("address") as string;
     const description = formData.get("description") as string;
     const website = formData.get("website") as string;
@@ -49,14 +73,14 @@ export async function createOrganization(formData: FormData) {
     const ticketSizeMax = formData.get("ticketSizeMax") as string;
     const aum = formData.get("aum") as string;
 
-    if (!name) return { error: "Name ist erforderlich" };
+    if (!name) return { success: false, error: "Name ist erforderlich" };
 
     try {
         const org = await prisma.organization.create({
             data: {
                 name,
                 industry: industry || null,
-                type: (type as any) || "OTHER",
+                type: (type || "OTHER") as any,
                 address: address || null,
                 description: description || null,
                 website: website || null,
@@ -70,17 +94,17 @@ export async function createOrganization(formData: FormData) {
 
         revalidatePath("/organizations");
         revalidatePath("/investors");
-        return { success: true, id: org.id };
+        return { success: true, data: { id: org.id } };
     } catch (error: any) {
         console.error("Failed to create organization:", error);
-        return { error: error.message || "Fehler beim Erstellen der Organisation" };
+        return { success: false, error: error.message || "Fehler beim Erstellen der Organisation" };
     }
 }
 
-export async function updateOrganization(id: string, formData: FormData) {
+export async function updateOrganization(id: string, formData: FormData): Promise<ActionResponse> {
     const name = formData.get("name") as string;
     const industry = formData.get("industry") as string;
-    const type = formData.get("type") as string;
+    const type = formData.get("type") as OrganizationType;
     const address = formData.get("address") as string;
     const description = formData.get("description") as string;
     const website = formData.get("website") as string;
@@ -88,7 +112,7 @@ export async function updateOrganization(id: string, formData: FormData) {
     const ticketSizeMax = formData.get("ticketSizeMax") as string;
     const aum = formData.get("aum") as string;
 
-    if (!name) return { error: "Name ist erforderlich" };
+    if (!name) return { success: false, error: "Name ist erforderlich" };
 
     try {
         await prisma.organization.update({
@@ -96,7 +120,7 @@ export async function updateOrganization(id: string, formData: FormData) {
             data: {
                 name,
                 industry: industry || null,
-                type: (type as any) || "OTHER",
+                type: (type || "OTHER") as any,
                 address: address || null,
                 description: description || null,
                 website: website || null,
@@ -114,11 +138,11 @@ export async function updateOrganization(id: string, formData: FormData) {
         return { success: true };
     } catch (error: any) {
         console.error("Failed to update organization:", error);
-        return { error: error.message || "Fehler beim Aktualisieren der Organisation" };
+        return { success: false, error: error.message || "Fehler beim Aktualisieren der Organisation" };
     }
 }
 
-export async function deleteOrganization(id: string) {
+export async function deleteOrganization(id: string): Promise<ActionResponse> {
     try {
         await prisma.organization.delete({ where: { id } });
         revalidatePath("/organizations");
@@ -126,6 +150,6 @@ export async function deleteOrganization(id: string) {
         return { success: true };
     } catch (error: any) {
         console.error("Failed to delete organization:", error);
-        return { error: error.message || "Fehler beim Löschen der Organisation" };
+        return { success: false, error: error.message || "Fehler beim Löschen der Organisation" };
     }
 }

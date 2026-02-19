@@ -21,7 +21,7 @@ export async function updateInvestorStatus(investorId: string, status: any) {
 export async function searchInvestors(query: { ticketSize?: number, industry?: string }) {
     return await prisma.organization.findMany({
         where: {
-            type: { in: ['BUYER', 'VC', 'PE_FUND'] },
+            type: { in: ['STRATEGIC_INVESTOR', 'FINANCIAL_INVESTOR'] },
             industry: query.industry ? { contains: query.industry, mode: 'insensitive' } : undefined,
             ticketSizeMax: query.ticketSize ? { gte: query.ticketSize } : undefined,
         }

@@ -46,18 +46,19 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EditInvestorDialog } from "@/components/deals/edit-investor-dialog";
+import { ORGANIZATION_TYPE_LABELS } from "@/lib/constants";
 
 // Types matching Schema + Client needs
 type InvestorRow = {
     organizationId: string;
     dealId: string;
     status: string;
-    type?: string;
     priority?: number;
     notes?: string;
     organization: {
         id: string;
         name: string;
+        type: string;
         address?: string | null;
         description?: string | null;
         industry?: string | null;
@@ -93,12 +94,12 @@ export function LonglistTable({ data, dealId }: { data: any[], dealId: string })
             header: "Unternehmen",
             cell: (info) => {
                 const org = info.row.original.organization;
-                const type = info.row.original.type;
+                const type = org.type;
                 return (
                     <div className="flex flex-col max-w-[250px] space-y-1">
                         <Link href={`/organizations/${org.id}`} className="flex items-center gap-2 group/org">
                             <span className="font-black text-slate-900 text-sm group-hover/org:text-blue-600 transition-colors uppercase tracking-tight">{org.name}</span>
-                            {type && <Badge variant="secondary" className="text-[9px] h-5 px-1.5 uppercase font-black tracking-widest bg-slate-100 text-slate-500 border-none group-hover/org:bg-blue-600 group-hover/org:text-white transition-all">{type === 'FINANCIAL' ? 'FI' : type === 'STRATEGIC' ? 'Strat' : type}</Badge>}
+                            {type && <Badge variant="secondary" className="text-[9px] h-5 px-1.5 uppercase font-black tracking-widest bg-slate-100 text-slate-500 border-none group-hover/org:bg-blue-600 group-hover/org:text-white transition-all">{ORGANIZATION_TYPE_LABELS[type] || type}</Badge>}
                         </Link>
                         {(org.address || org.city) && (
                             <div className="flex items-center gap-1 text-[11px] text-slate-500">
@@ -275,7 +276,7 @@ export function LonglistTable({ data, dealId }: { data: any[], dealId: string })
         const headers = ["Unternehmen", "Typ", "Kontakt", "Email", "Status", "Notizen"];
         const rows = data.map(row => [
             row.organization.name,
-            row.type || "N/A",
+            row.organization.type ? (ORGANIZATION_TYPE_LABELS[row.organization.type] || row.organization.type) : "N/A",
             row.contact ? `${row.contact.firstName} ${row.contact.lastName}` : "",
             row.contact?.email || "",
             row.status,

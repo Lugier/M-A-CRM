@@ -2,6 +2,8 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { ActionResponse } from "@/lib/types";
+import { OrganizationType } from "@prisma/client";
 
 export async function getContacts() {
     try {
@@ -63,7 +65,7 @@ export async function getContactById(id: string) {
     }
 }
 
-export async function createContact(formData: FormData) {
+export async function createContact(formData: FormData): Promise<ActionResponse<{ id: string }>> {
     const firstName = formData.get("firstName") as string;
     const lastName = formData.get("lastName") as string;
     const email = formData.get("email") as string;
@@ -72,27 +74,24 @@ export async function createContact(formData: FormData) {
     let organizationId = formData.get("organizationId") as string;
     const internalOwnerId = formData.get("internalOwnerId") as string;
 
-    // Inline Organization Creation
     const newOrgName = formData.get("newOrgName") as string;
-    const newOrgType = formData.get("newOrgType") as string;
+    const newOrgType = formData.get("newOrgType") as OrganizationType;
     const newOrgIndustry = formData.get("newOrgIndustry") as string;
 
-    if (!lastName) return { error: "Nachname ist erforderlich" };
+    if (!lastName) return { success: false, error: "Nachname ist erforderlich" };
 
     try {
-        // 1. Create Organization if needed
         if (organizationId === "NEW" && newOrgName) {
             const org = await prisma.organization.create({
                 data: {
                     name: newOrgName,
-                    type: (newOrgType as any) || "OTHER",
+                    type: newOrgType || OrganizationType.OTHER,
                     industry: newOrgIndustry || null,
                 }
             });
             organizationId = org.id;
         }
 
-        // 2. Create Contact
         const contact = await prisma.contact.create({
             data: {
                 firstName: firstName || "",
@@ -105,7 +104,6 @@ export async function createContact(formData: FormData) {
             }
         });
 
-        // 3. Create Referral Connection if applicable
         const introducedById = formData.get("introducedById") as string;
         if (introducedById && introducedById !== "NONE") {
             await prisma.contactConnection.create({
@@ -119,14 +117,14 @@ export async function createContact(formData: FormData) {
 
         revalidatePath("/contacts");
         revalidatePath("/organizations");
-        return { success: true, id: contact.id };
+        return { success: true, data: { id: contact.id } };
     } catch (error: any) {
         console.error("Failed to create contact:", error);
-        return { error: error.message || "Fehler beim Erstellen des Kontakts" };
+        return { success: false, error: error.message || "Fehler beim Erstellen des Kontakts" };
     }
 }
 
-export async function updateContact(id: string, formData: FormData) {
+export async function updateContact(id: string, formData: FormData): Promise<ActionResponse> {
     const firstName = formData.get("firstName") as string;
     const lastName = formData.get("lastName") as string;
     const email = formData.get("email") as string;
@@ -135,7 +133,7 @@ export async function updateContact(id: string, formData: FormData) {
     const organizationId = formData.get("organizationId") as string;
     const internalOwnerId = formData.get("internalOwnerId") as string;
 
-    if (!lastName) return { error: "Nachname ist erforderlich" };
+    if (!lastName) return { success: false, error: "Nachname ist erforderlich" };
 
     try {
         await prisma.contact.update({
@@ -156,17 +154,17 @@ export async function updateContact(id: string, formData: FormData) {
         return { success: true };
     } catch (error: any) {
         console.error("Failed to update contact:", error);
-        return { error: error.message || "Fehler beim Aktualisieren des Kontakts" };
+        return { success: false, error: error.message || "Fehler beim Aktualisieren des Kontakts" };
     }
 }
 
-export async function deleteContact(id: string) {
+export async function deleteContact(id: string): Promise<ActionResponse> {
     try {
         await prisma.contact.delete({ where: { id } });
         revalidatePath("/contacts");
         return { success: true };
     } catch (error: any) {
         console.error("Failed to delete contact:", error);
-        return { error: error.message || "Fehler beim Löschen des Kontakts" };
+        return { success: false, error: error.message || "Fehler beim Löschen des Kontakts" };
     }
 }

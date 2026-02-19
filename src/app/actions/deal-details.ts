@@ -2,6 +2,8 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { ActionResponse, Task as LibTask } from "@/lib/types";
+import { DealStage, ProjectStep, DealTeamRole, InvestorStatus, TaskPriority } from "@prisma/client";
 
 export async function getDealById(id: string) {
     return await prisma.deal.findUnique({
@@ -54,13 +56,12 @@ export async function getDealById(id: string) {
     }) as any;
 }
 
-export async function updateDealAction(dealId: string, data: any) {
+export async function updateDealAction(dealId: string, data: any): Promise<ActionResponse> {
     try {
         await prisma.deal.update({
             where: { id: dealId },
             data: {
                 ...data,
-                // Ensure correct types if necessary, but data is already prepped
             }
         });
         revalidatePath(`/deals/${dealId}`);
@@ -68,17 +69,15 @@ export async function updateDealAction(dealId: string, data: any) {
         return { success: true };
     } catch (error: any) {
         console.error("[updateDealAction] ERROR:", error);
-        // Special case: if website field is unknown, inform the user
         if (error.message?.includes("Unknown argument `website`")) {
-            return { error: "Datenbank-Client muss aktualisiert werden. Bitte stoppen Sie den Server und führen Sie 'npx prisma generate' aus." };
+            return { success: false, error: "Datenbank-Client muss aktualisiert werden. Bitte stoppen Sie den Server und führen Sie 'npx prisma generate' aus." };
         }
-        return { error: error.message || "Fehler beim Aktualisieren" };
+        return { success: false, error: error.message || "Fehler beim Aktualisieren" };
     }
 }
 
-export async function updateDealStageAction(dealId: string, stage: any) {
+export async function updateDealStageAction(dealId: string, stage: DealStage): Promise<ActionResponse> {
     try {
-        // Close previous history entry
         const lastHistory = await prisma.dealPipelineHistory.findFirst({
             where: { dealId, exitedAt: null },
             orderBy: { enteredAt: 'desc' }
@@ -104,11 +103,11 @@ export async function updateDealStageAction(dealId: string, stage: any) {
         revalidatePath("/dashboard");
         return { success: true };
     } catch (error: any) {
-        return { error: error.message || "Fehler beim Aktualisieren der Phase" };
+        return { success: false, error: error.message || "Fehler beim Aktualisieren der Phase" };
     }
 }
 
-export async function updateProjectStepAction(dealId: string, step: any) {
+export async function updateProjectStepAction(dealId: string, step: ProjectStep): Promise<ActionResponse> {
     try {
         await prisma.deal.update({
             where: { id: dealId },
@@ -118,18 +117,18 @@ export async function updateProjectStepAction(dealId: string, step: any) {
         revalidatePath(`/deals/${dealId}`);
         return { success: true };
     } catch (error: any) {
-        return { error: error.message || "Fehler beim Aktualisieren des Projektschritts" };
+        return { success: false, error: error.message || "Fehler beim Aktualisieren des Projektschritts" };
     }
 }
 
-export async function addTaskAction(dealId: string, title: string, priority?: string, assignedToId?: string, category?: string) {
+export async function addTaskAction(dealId: string, title: string, priority?: TaskPriority, assignedToId?: string, category?: string): Promise<ActionResponse> {
     try {
         await prisma.task.create({
             data: {
                 title,
                 dealId,
                 isCompleted: false,
-                priority: (priority as any) || "MEDIUM",
+                priority: priority || "MEDIUM",
                 assignedToId: assignedToId || null,
                 category: category || null,
             }
@@ -139,11 +138,11 @@ export async function addTaskAction(dealId: string, title: string, priority?: st
         revalidatePath("/tasks");
         return { success: true };
     } catch (error: any) {
-        return { error: "Fehler beim Erstellen der Aufgabe" };
+        return { success: false, error: "Fehler beim Erstellen der Aufgabe" };
     }
 }
 
-export async function toggleTaskAction(taskId: string, isCompleted: boolean) {
+export async function toggleTaskAction(taskId: string, isCompleted: boolean): Promise<ActionResponse> {
     try {
         await prisma.task.update({
             where: { id: taskId },
@@ -154,26 +153,26 @@ export async function toggleTaskAction(taskId: string, isCompleted: boolean) {
         revalidatePath("/dashboard");
         return { success: true };
     } catch (error: any) {
-        return { error: "Fehler beim Aktualisieren der Aufgabe" };
+        return { success: false, error: "Fehler beim Aktualisieren der Aufgabe" };
     }
 }
 
-export async function updateTaskAction(taskId: string, data: any) {
+export async function updateTaskAction(taskId: string, data: Partial<LibTask>): Promise<ActionResponse> {
     try {
         await prisma.task.update({
             where: { id: taskId },
-            data
+            data: data as any
         });
         revalidatePath("/deals");
         revalidatePath("/tasks");
         revalidatePath("/dashboard");
         return { success: true };
     } catch (error: any) {
-        return { error: error.message };
+        return { success: false, error: error.message };
     }
 }
 
-export async function addDealTeamMemberAction(dealId: string, userId: string, role: any) {
+export async function addDealTeamMemberAction(dealId: string, userId: string, role: DealTeamRole): Promise<ActionResponse> {
     try {
         await prisma.dealTeamMember.upsert({
             where: { dealId_userId: { dealId, userId } },
@@ -183,11 +182,11 @@ export async function addDealTeamMemberAction(dealId: string, userId: string, ro
         revalidatePath(`/deals/${dealId}`);
         return { success: true };
     } catch (error: any) {
-        return { error: "Fehler beim Hinzufügen zum Team" };
+        return { success: false, error: "Fehler beim Hinzufügen zum Team" };
     }
 }
 
-export async function removeDealTeamMemberAction(dealId: string, userId: string) {
+export async function removeDealTeamMemberAction(dealId: string, userId: string): Promise<ActionResponse> {
     try {
         await prisma.dealTeamMember.delete({
             where: { dealId_userId: { dealId, userId } }
@@ -195,11 +194,11 @@ export async function removeDealTeamMemberAction(dealId: string, userId: string)
         revalidatePath(`/deals/${dealId}`);
         return { success: true };
     } catch (error: any) {
-        return { error: "Fehler beim Entfernen vom Team" };
+        return { success: false, error: "Fehler beim Entfernen vom Team" };
     }
 }
 
-export async function addInvestorToDealAction(dealId: string, organizationId: string, contactId?: string) {
+export async function addInvestorToDealAction(dealId: string, organizationId: string, contactId?: string): Promise<ActionResponse> {
     try {
         const exists = await prisma.dealInvestor.findUnique({
             where: { dealId_organizationId: { dealId, organizationId } }
@@ -218,11 +217,11 @@ export async function addInvestorToDealAction(dealId: string, organizationId: st
         revalidatePath(`/deals/${dealId}`);
         return { success: true };
     } catch (error: any) {
-        return { error: "Fehler beim Hinzufügen des Investors" };
+        return { success: false, error: "Fehler beim Hinzufügen des Investors" };
     }
 }
 
-export async function updateInvestorStatusAction(dealId: string, organizationId: string, status: any) {
+export async function updateInvestorStatusAction(dealId: string, organizationId: string, status: InvestorStatus): Promise<ActionResponse> {
     try {
         const updateData: any = { status };
         const now = new Date();
@@ -238,20 +237,21 @@ export async function updateInvestorStatusAction(dealId: string, organizationId:
         revalidatePath(`/deals/${dealId}`);
         return { success: true };
     } catch (error: any) {
-        return { error: "Fehler beim Aktualisieren des Investor-Status" };
+        return { success: false, error: "Fehler beim Aktualisieren des Investor-Status" };
     }
 }
 
-export async function updateDealInvestorAction(dealId: string, organizationId: string, data: any) {
+export async function updateDealInvestorAction(dealId: string, organizationId: string, data: any): Promise<ActionResponse> {
     try {
+        const { type, ...updateData } = data; // Remove type if present (legacy field)
         await prisma.dealInvestor.update({
             where: { dealId_organizationId: { dealId, organizationId } },
-            data
+            data: updateData
         });
         revalidatePath(`/deals/${dealId}`);
         return { success: true };
     } catch (error: any) {
-        return { error: "Fehler beim Aktualisieren des Investors" };
+        return { success: false, error: "Fehler beim Aktualisieren des Investors" };
     }
 }
 
@@ -266,7 +266,7 @@ export async function getOrganizationDetailsAction(organizationId: string) {
     }
 }
 
-export async function createContactForDealAction(dealId: string, organizationId: string, data: any) {
+export async function createContactForDealAction(dealId: string, organizationId: string, data: any): Promise<ActionResponse<{ contactId: string }>> {
     try {
         const contact = await prisma.contact.create({
             data: {
@@ -281,9 +281,9 @@ export async function createContactForDealAction(dealId: string, organizationId:
         });
         await addInvestorToDealAction(dealId, organizationId, contact.id);
         revalidatePath(`/deals/${dealId}`);
-        return { success: true, contactId: contact.id };
+        return { success: true, data: { contactId: contact.id } };
     } catch (error: any) {
-        return { error: error.message || "Fehler beim Erstellen des Kontakts" };
+        return { success: false, error: error.message || "Fehler beim Erstellen des Kontakts" };
     }
 }
 
@@ -303,7 +303,7 @@ export async function createUnifiedInvestorAction(dealId: string, data: {
         employees?: number;
     };
     contact?: { id?: string; title?: string; firstName: string; lastName: string; email?: string; phone?: string; role?: string; };
-}) {
+}): Promise<ActionResponse> {
     try {
         let organizationId = data.org.id;
         if (!organizationId) {
@@ -341,7 +341,6 @@ export async function createUnifiedInvestorAction(dealId: string, data: {
             contactId = contact.id;
         }
 
-        // Fallback: If still no contactId, but we have an organization, take the first available contact
         if (!contactId && organizationId) {
             const firstContact = await prisma.contact.findFirst({
                 where: { organizationId },
@@ -367,11 +366,11 @@ export async function createUnifiedInvestorAction(dealId: string, data: {
         revalidatePath("/contacts");
         return { success: true };
     } catch (error: any) {
-        return { error: error.message || "Fehler beim Erstellen des Investors" };
+        return { success: false, error: error.message || "Fehler beim Erstellen des Investors" };
     }
 }
 
-export async function addActivityAction(dealId: string, type: string, content: string, userId?: string) {
+export async function addActivityAction(dealId: string, type: string, content: string, userId?: string): Promise<ActionResponse> {
     try {
         await prisma.activity.create({
             data: { dealId, type, content, userId: userId || null }
@@ -379,12 +378,11 @@ export async function addActivityAction(dealId: string, type: string, content: s
         revalidatePath(`/deals/${dealId}`);
         return { success: true };
     } catch (error: any) {
-        return { error: error.message };
+        return { success: false, error: error.message };
     }
 }
 
-// Client Portal
-export async function updateClientPortalSettings(dealId: string, enabled: boolean, password?: string) {
+export async function updateClientPortalSettings(dealId: string, enabled: boolean, password?: string): Promise<ActionResponse> {
     try {
         await prisma.deal.update({
             where: { id: dealId },
@@ -393,7 +391,7 @@ export async function updateClientPortalSettings(dealId: string, enabled: boolea
         revalidatePath(`/deals/${dealId}`);
         return { success: true };
     } catch (error: any) {
-        return { error: error.message };
+        return { success: false, error: error.message };
     }
 }
 
@@ -416,7 +414,6 @@ export async function getClientPortalData(dealId: string) {
     });
     if (!deal || !deal.clientPortalEnabled) return null;
 
-    // Aggregate stats (anonymized)
     const stats = {
         totalInvestors: deal.investors.length,
         contacted: deal.investors.filter(i => i.status !== "LONGLIST" && i.status !== "SHORTLIST").length,

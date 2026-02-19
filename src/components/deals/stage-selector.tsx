@@ -11,7 +11,7 @@ export function StageSelector({ dealId, currentStage }: { dealId: string, curren
         const stage = e.target.value;
         setIsPending(true);
         try {
-            const result = await updateDealStageAction(dealId, stage);
+            const result = await updateDealStageAction(dealId, stage as any);
             if (result?.success) {
                 toast.success(`Workflow-Status aktualisiert: ${stage}`);
             } else {

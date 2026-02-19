@@ -18,12 +18,9 @@ import { updateOrganization } from "@/app/actions/organizations";
 import { useState } from "react";
 import { toast } from "sonner";
 
-const ORG_TYPES = [
-    { value: "BUYER", label: "Stratege" },
-    { value: "PE_FUND", label: "Finanzinvestor (FI)" },
-    { value: "VC", label: "Venture Capital" },
-    { value: "OTHER", label: "Family Office / Andere" },
-];
+import { ORGANIZATION_TYPE_LABELS } from "@/lib/constants";
+
+const ORG_TYPES = Object.entries(ORGANIZATION_TYPE_LABELS).map(([value, label]) => ({ value, label }));
 
 type OrgData = {
     id: string;

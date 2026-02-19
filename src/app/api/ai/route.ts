@@ -158,7 +158,7 @@ Regeln für Finanzdaten:
   "description": "Kurzbeschreibung für M&A-Kontext (Geschäftsmodell, Fokus, 2-3 Sätze)",
   "city": "Stadt",
   "country": "Land",
-  "type": "BUYER | PE_FUND (Nutze NUR diese beiden Werte: BUYER für alle Firmen/Strategen, PE_FUND für alle Finanzinvestoren/Private Equity)",
+  "type": "STRATEGIC_INVESTOR | FINANCIAL_INVESTOR (Nutze NUR diese beiden Werte: STRATEGIC_INVESTOR für Strategen/Unternehmen, FINANCIAL_INVESTOR für Finanzinvestoren/PEs)",
   "website": "${websiteUrl}",
   "revenue": Zahl in EUR (oder null),
   "ebitda": Zahl in EUR (oder null),

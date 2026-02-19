@@ -3,8 +3,13 @@ import { CreateOrganizationDialog } from "@/components/organizations/create-orga
 import { Building2, Users } from "lucide-react";
 import Link from "next/link";
 
-export default async function OrganizationsPage() {
-    const organizations = await getOrganizations();
+import { OrganizationFilter } from "@/components/organizations/organization-filter";
+import { ORGANIZATION_TYPE_LABELS } from "@/lib/constants";
+
+export default async function OrganizationsPage({ searchParams }: { searchParams: { type?: string } }) {
+    const organizations = await getOrganizations({ type: searchParams.type });
+
+    const typeLabels = ORGANIZATION_TYPE_LABELS;
 
     return (
         <div className="h-full flex flex-col p-4 lg:p-8 overflow-hidden bg-slate-50/30">
@@ -13,7 +18,10 @@ export default async function OrganizationsPage() {
                     <h1 className="text-2xl font-bold tracking-tight text-slate-900">Organisationen</h1>
                     <p className="text-slate-500 text-sm">Ihre Unternehmensdatenbank für M&A Transaktionen.</p>
                 </div>
-                <CreateOrganizationDialog />
+                <div className="flex items-center gap-3">
+                    <OrganizationFilter />
+                    <CreateOrganizationDialog />
+                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto min-h-0 pr-1 custom-scrollbar">
@@ -39,7 +47,7 @@ export default async function OrganizationsPage() {
                                         <span>{org._count.contacts} Kontakte</span>
                                     </div>
                                     <span className="font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-1.5 py-0.5 rounded">
-                                        {org.type === "BUYER" ? "Käufer" : org.type === "VC" ? "VC" : org.type === "PE_FUND" ? "PE Fund" : "Firma"}
+                                        {typeLabels[org.type] || org.type}
                                     </span>
                                 </div>
                             </div>

@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Clock, FileText, PieChart, TrendingUp, Lock } from "lucide-react";
 import { useParams } from "next/navigation";
-import Link from "next/link"; // Changed from import { Link } from "lucide-react" which is wrong
+import Link from "next/link";
+import { ORGANIZATION_TYPE_LABELS } from "@/lib/constants";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -153,7 +154,7 @@ export default function PortalDashboard() {
                                         {data.investors?.map((investor: any) => (
                                             <TableRow key={investor.id}>
                                                 <TableCell className="font-medium">{investor.name}</TableCell>
-                                                <TableCell>{investor.type}</TableCell>
+                                                <TableCell>{ORGANIZATION_TYPE_LABELS[investor.type] || investor.type}</TableCell>
                                                 <TableCell>
                                                     <Badge variant="outline">{investor.status}</Badge>
                                                 </TableCell>

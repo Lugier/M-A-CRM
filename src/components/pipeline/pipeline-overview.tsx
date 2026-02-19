@@ -3,13 +3,11 @@
 import { useMemo } from "react";
 import { BarChart3 } from "lucide-react";
 
+import { DEAL_STAGE_LABELS } from "@/lib/constants";
+
 export function PipelineOverview({ deals }: { deals: any[] }) {
     const STAGES = ["PITCH", "MANDATE", "CLOSING"];
-    const STAGE_LABELS: Record<string, string> = {
-        PITCH: "Lead / Pitch",
-        MANDATE: "Mandat / Execution",
-        CLOSING: "Closing / Portfolio"
-    };
+    const STAGE_LABELS = DEAL_STAGE_LABELS;
 
     const data = useMemo(() => {
         return STAGES.map(stage => {

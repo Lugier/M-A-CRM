@@ -11,14 +11,27 @@ export async function getComments(dealId: string) {
     });
 }
 
-export async function addComment(dealId: string | undefined, userId: string, content: string, contactId?: string) {
+export async function addComment(dealId: string | undefined, userId: string, content: string, contactId?: string, organizationId?: string) {
     try {
+        // Auto-resolve organizationId if not provided but contactId or dealId is
+        let resolvedOrgId = organizationId;
+        if (!resolvedOrgId) {
+            if (contactId) {
+                const contact = await prisma.contact.findUnique({ where: { id: contactId }, select: { organizationId: true } });
+                if (contact?.organizationId) resolvedOrgId = contact.organizationId;
+            } else if (dealId) {
+                const deal = await prisma.deal.findUnique({ where: { id: dealId }, select: { lead: { select: { organizationId: true } } } });
+                if (deal?.lead?.organizationId) resolvedOrgId = deal.lead.organizationId;
+            }
+        }
+
         const comment = (await prisma.comment.create({
             data: {
                 dealId: (dealId || null),
                 userId,
                 content,
-                contactId: (contactId || null)
+                contactId: (contactId || null),
+                organizationId: (resolvedOrgId || null)
             } as any,
             include: { deal: true, user: true }
         })) as any;

@@ -10,14 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Plus, Loader2, Calendar as CalendarIcon, MapPin, AlignLeft } from "lucide-react";
 import { useUser } from "@/components/user-context";
+import { EVENT_TYPE_LABELS } from "@/lib/constants";
 
-const EVENT_TYPE_LABELS: Record<string, string> = {
-    MEETING: "Meeting",
-    CALL: "Call",
-    DEADLINE: "Deadline",
-    MILESTONE: "Meilenstein",
-    OTHER: "Sonstiges",
-};
 
 export function AddEventDialog({ dealId }: { dealId: string }) {
     const [open, setOpen] = useState(false);

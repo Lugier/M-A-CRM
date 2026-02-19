@@ -222,7 +222,7 @@ function StageRow({
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     async function handleActivate() {
-        const res = await updateProjectStepAction(deal.id, stage.id);
+        const res = await updateProjectStepAction(deal.id, stage.id as any);
         if (res.error) toast.error(res.error);
         else toast.success(`Projektstatus: ${stage.label}`);
     }

@@ -61,7 +61,6 @@ model Organization {
   // Stammdaten
   description     String?
   address         String?
-  postalCode      String?
   city            String?
   country         String?
   website         String?
@@ -70,16 +69,20 @@ model Organization {
   contacts        Contact[]
   investorDeals   DealInvestor[]
   tags            TagAssignment[]
+  activities      Activity[]
+  comments        Comment[]
+  tasks           Task[]
+  calendarEvents  CalendarEvent[]
   
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 }
 
 enum OrganizationType {
-  TARGET
-  BUYER
-  VC
-  PE_FUND
+  STRATEGIC_INVESTOR
+  FINANCIAL_INVESTOR
+  INSOLVENCY_ADMIN
+  TAX_ADVISOR
   OTHER
 }
 
@@ -108,6 +111,7 @@ model Contact {
   tasks           Task[]         @relation("ContactTasks")
   activities      Activity[]
   comments        Comment[]
+  calendarEvents  CalendarEvent[]
   investorDeals   DealInvestor[]
   tags            TagAssignment[]
   
@@ -177,11 +181,6 @@ model Deal {
   
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
-
-  // Archive / Outcome Data
-  isSuccessful         Boolean?
-  finalSuccessFee      Float?
-  archiveDestination   String?
 }
 
 enum DealType {
@@ -279,12 +278,7 @@ enum DealTeamRole {
 // DEAL INVESTORS (LONGLIST)
 // ============================================================
 
-enum InvestorType {
-  STRATEGIC
-  FINANCIAL
-  CONSULTANT
-  OTHER
-}
+
 
 model DealInvestor {
   id              String         @id @default(cuid())
@@ -298,7 +292,6 @@ model DealInvestor {
   contact         Contact?       @relation(fields: [contactId], references: [id])
 
   status          InvestorStatus @default(LONGLIST)
-  type            InvestorType   @default(STRATEGIC)
   feedback        String?
 
   passReason      String?
@@ -409,6 +402,9 @@ model Task {
   contactId       String?
   contact         Contact?       @relation("ContactTasks", fields: [contactId], references: [id])
   
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id])
+  
   assignedToId    String?
   assignedTo      User?          @relation(fields: [assignedToId], references: [id])
   
@@ -439,6 +435,9 @@ model Activity {
   
   userId          String?
   user            User?          @relation("UserActivities", fields: [userId], references: [id])
+  
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id])
   
   createdAt       DateTime       @default(now())
 }
@@ -490,6 +489,12 @@ model CalendarEvent {
   dealId          String?
   deal            Deal?          @relation(fields: [dealId], references: [id])
   
+  contactId       String?
+  contact         Contact?       @relation(fields: [contactId], references: [id])
+
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id])
+  
   userId          String?
   user            User?          @relation(fields: [userId], references: [id])
   
@@ -537,6 +542,9 @@ model Comment {
   contactId       String?
   contact         Contact?       @relation(fields: [contactId], references: [id], onDelete: Cascade)
   
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 }
@@ -560,5 +568,3 @@ enum NotificationType {
   DEAL_UPDATE
   OTHER
 }
-
-

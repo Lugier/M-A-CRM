@@ -30,7 +30,7 @@ export async function createDealAction(formData: FormData) {
                 expectedValue,
                 probability,
                 type: (type as any) || "SELL_SIDE",
-                stage: "LEAD",
+                stage: "PITCH",
                 status: "ACTIVE",
                 website: website || null,
                 description: description || null,

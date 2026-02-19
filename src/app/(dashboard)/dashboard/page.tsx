@@ -22,7 +22,6 @@ export default async function DashboardPage() {
     // Calculate quick stats
     const activeDeals = deals.filter((d: any) => d.status === "ACTIVE" && d.stage !== "ARCHIVED");
     const totalPipelineValue = activeDeals.reduce((sum: number, d: any) => sum + (d.feeSuccess || d.expectedValue || 0), 0);
-    const weightedPipelineValue = activeDeals.reduce((sum: number, d: any) => sum + ((d.feeSuccess || d.expectedValue || 0) * (d.probability || 0)), 0);
 
     // Calculate NDA Conversion (Replacement for Win Rate)
     const ndaCount = deals.filter((d: any) =>
@@ -62,7 +61,7 @@ export default async function DashboardPage() {
                     <KPICard
                         title="Pipeline Volumen"
                         value={`${(totalPipelineValue / 1000000).toFixed(1)}M €`}
-                        subtitle={`Gewichtet: ${(weightedPipelineValue / 1000000).toFixed(1)}M €`}
+                        subtitle="Engagement Volumen Gesamt"
                         icon={DollarSign}
                         color="emerald"
                     />
@@ -159,7 +158,7 @@ export default async function DashboardPage() {
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="divide-y divide-slate-100">
-                                    {users.sort((a: any, b: any) => (b.dealTeams?.length || 0) - (a.dealTeams?.length || 0)).slice(0, 6).map((user: any) => (
+                                    {users.sort((a: any, b: any) => (b.dealTeams?.length || 0) - (a.dealTeams?.length || 0)).slice(0, 20).map((user: any) => (
                                         <Link key={user.id} href={`/team/${user.id}`} className="flex items-center gap-3 p-4 group hover:bg-slate-50 transition-colors">
                                             <div
                                                 className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-black text-white border-2 border-white shadow-sm shrink-0 transition-transform group-hover:scale-110"

@@ -36,16 +36,9 @@ const STATUS_OPTIONS = [
     { value: "DROPPED", label: "Abgesagt / Pass" },
 ];
 
-const TYPE_OPTIONS = [
-    { value: "STRATEGIC", label: "Stratege" },
-    { value: "FINANCIAL", label: "Finanzinvestor (PE)" },
-    { value: "CONSULTANT", label: "Berater" },
-    { value: "OTHER", label: "Sonstiges" },
-];
 
 export function EditInvestorDialog({ isOpen, onClose, dealId, investor }: EditInvestorDialogProps) {
     const [status, setStatus] = useState(investor?.status || "LONGLIST");
-    const [type, setType] = useState(investor?.type || "STRATEGIC");
     const [notes, setNotes] = useState(investor?.notes || "");
     const [priority, setPriority] = useState(investor?.priority || 0); // 0-3
     const [selectedContactId, setSelectedContactId] = useState<string | null>(investor?.contactId || null);
@@ -56,7 +49,6 @@ export function EditInvestorDialog({ isOpen, onClose, dealId, investor }: EditIn
     useEffect(() => {
         if (isOpen && investor) {
             setStatus(investor.status || "LONGLIST");
-            setType(investor.type || "STRATEGIC");
             setNotes(investor.notes || "");
             setPriority(investor.priority || 0);
             setSelectedContactId(investor.contactId || null);
@@ -85,7 +77,6 @@ export function EditInvestorDialog({ isOpen, onClose, dealId, investor }: EditIn
 
         const result = await updateDealInvestorAction(dealId, investor.organizationId, {
             status,
-            type,
             notes,
             priority: Number(priority),
             contactId: selectedContactId, // Allow updating contact
@@ -114,7 +105,7 @@ export function EditInvestorDialog({ isOpen, onClose, dealId, investor }: EditIn
                 </DialogHeader>
 
                 <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                         <div className="space-y-2">
                             <Label>Status</Label>
                             <Select value={status} onValueChange={setStatus}>
@@ -123,19 +114,6 @@ export function EditInvestorDialog({ isOpen, onClose, dealId, investor }: EditIn
                                 </SelectTrigger>
                                 <SelectContent>
                                     {STATUS_OPTIONS.map(opt => (
-                                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Typ</Label>
-                            <Select value={type} onValueChange={setType}>
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {TYPE_OPTIONS.map(opt => (
                                         <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                                     ))}
                                 </SelectContent>

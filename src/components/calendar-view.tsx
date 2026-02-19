@@ -7,15 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/components/user-context";
+import { EVENT_TYPE_LABELS } from "@/lib/constants";
 
-const EVENT_TYPE_LABELS: Record<string, string> = {
-    MEETING: "Meeting",
-    CALL: "Call",
-    DEADLINE: "Deadline",
-    MILESTONE: "Meilenstein",
-    OTHER: "Sonstiges",
-    TASK: "Aufgabe"
-};
 
 const EVENT_TYPE_COLORS: Record<string, string> = {
     MEETING: "bg-blue-500",
