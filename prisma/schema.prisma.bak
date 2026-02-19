@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://postgres:kA8DNgZl0pIc18to@db.urfflntfcztmvhcsckqv.supabase.co:5432/postgres"
+}
+
+// --- CORE CRM ENTITIES ---
+
+model Organization {
+  id              String         @id @default(cuid())
+  name            String
+  industry        String?
+  geographies     String[]
+  ticketSizeMin   Float?
+  ticketSizeMax   Float?
+  aum             Float?
+  type            OrganizationType @default(OTHER)
+  
+  contacts        Contact[]
+  investorDeals   DealInvestor[]
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+enum OrganizationType {
+  TARGET
+  BUYER
+  VC
+  PE_FUND
+  OTHER
+}
+
+model Contact {
+  id              String         @id @default(cuid())
+  firstName       String
+  lastName        String
+  email           String?        @unique
+  phone           String?
+  role            String?        // e.g., CEO, Investor Lead
+  
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id])
+  
+  // Relationship Graph (Many-to-Many self relation)
+  connectionsFrom ContactConnection[] @relation("ConnectionFrom")
+  connectionsTo   ContactConnection[] @relation("ConnectionTo")
+  
+  deals           Deal[]         @relation("DealLead")
+  tasks           Task[]
+  activities      Activity[]
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model ContactConnection {
+  id              String         @id @default(cuid())
+  fromId          String
+  toId            String
+  type            String         @default("INTRODUCED_BY") // Worked together, etc.
+  
+  from            Contact        @relation("ConnectionFrom", fields: [fromId], references: [id])
+  to              Contact        @relation("ConnectionTo", fields: [toId], references: [id])
+  
+  @@unique([fromId, toId])
+}
+
+// --- DEAL ENTITIES ---
+
+model Deal {
+  id              String         @id @default(cuid())
+  name            String
+  type            DealType
+  status          DealStatus     @default(LEAD)
+  
+  leadId          String?
+  lead            Contact?       @relation("DealLead", fields: [leadId], references: [id])
+  
+  expectedValue   Float?
+  probability     Float?         @default(0.1)
+  feeRetainer     Float?
+  feeSuccess      Float?         // Percentage or absolute
+  
+  // Stages & Timeline
+  stage           DealStage      @default(LEAD)
+  history         DealPipelineHistory[]
+  
+  investors       DealInvestor[]
+  documents       Document[]
+  tasks           Task[]
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+enum DealType {
+  SELL_SIDE
+  BUY_SIDE
+  MERGER
+  CAPITAL_RAISE
+}
+
+enum DealStatus {
+  ACTIVE
+  ON_HOLD
+  CLOSED_WON
+  CLOSED_LOST
+  LEAD
+}
+
+enum DealStage {
+  LEAD
+  ASSESSMENT
+  MANDATE
+  PREP
+  MARKETING
+  BIDDING
+  DD
+  NEGOTIATION
+  CLOSING
+}
+
+model DealPipelineHistory {
+  id              String         @id @default(cuid())
+  dealId          String
+  deal            Deal           @relation(fields: [dealId], references: [id])
+  stage           DealStage
+  enteredAt       DateTime       @default(now())
+  exitedAt        DateTime?
+}
+
+model DealInvestor {
+  id              String         @id @default(cuid())
+  dealId          String
+  deal            Deal           @relation(fields: [dealId], references: [id])
+  
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  
+  status          InvestorStatus @default(LONGLIST)
+  feedback        String?
+  passReason      String?
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([dealId, organizationId])
+}
+
+enum InvestorStatus {
+  LONGLIST
+  SHORTLIST
+  CONTACTED
+  NDA_SENT
+  NDA_SIGNED
+  IM_SENT
+  PROCESS_LETTER_SENT
+  BID_RECEIVED
+  DROPPED
+}
+
+// --- UTILITY ENTITIES ---
+
+model Document {
+  id              String         @id @default(cuid())
+  name            String
+  path            String         // Supabase Storage Path
+  type            DocumentType
+  version         Int            @default(1)
+  
+  dealId          String?
+  deal            Deal?          @relation(fields: [dealId], references: [id])
+  
+  createdAt       DateTime       @default(now())
+}
+
+enum DocumentType {
+  TEASER
+  IM
+  PROCESS_LETTER
+  NDA
+  DD_DOCUMENT
+  OTHER
+}
+
+model Task {
+  id              String         @id @default(cuid())
+  title           String
+  description     String?
+  dueDate         DateTime?
+  isCompleted     Boolean        @default(false)
+  
+  dealId          String?
+  deal            Deal?          @relation(fields: [dealId], references: [id])
+  
+  contactId       String?
+  contact         Contact?       @relation(fields: [contactId], references: [id])
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Activity {
+  id              String         @id @default(cuid())
+  type            String         // EMAIL, MEETING, CALL, NOTE
+  content         String
+  
+  contactId       String
+  contact         Contact        @relation(fields: [contactId], references: [id])
+  
+  createdAt       DateTime       @default(now())
+}

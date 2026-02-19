@@ -1,0 +1,10 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://postgres:kA8DNgZl0pIc18to@db.urfflntfcztmvhcsckqv.supabase.co:5432/postgres?pgbouncer=true"
+}
+
+// ... rest of schema

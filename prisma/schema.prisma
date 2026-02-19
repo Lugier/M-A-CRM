@@ -1,0 +1,564 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+// ============================================================
+// USER & AUTH
+// ============================================================
+model User {
+  id              String         @id @default(cuid())
+  name            String
+  email           String         @unique
+  initials        String
+  role            UserRole       @default(ANALYST)
+  avatarColor     String         @default("#3b82f6")
+  teamsWebhookUrl String?
+  
+  // Relations
+  assignedTasks   Task[]
+  activities      Activity[]     @relation("UserActivities")
+  calendarEvents  CalendarEvent[]
+  dealTeams       DealTeamMember[]
+  comments        Comment[]
+  notifications   Notification[]
+  
+  ownedContacts   Contact[]      @relation("ContactOwner")
+  stageMemberships DealStageMember[]
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+enum UserRole {
+  ADMIN
+  PARTNER
+  DIRECTOR
+  VP
+  ASSOCIATE
+  ANALYST
+  INTERN
+}
+
+// ============================================================
+// ORGANIZATIONS
+// ============================================================
+model Organization {
+  id              String         @id @default(cuid())
+  name            String
+  industry        String?
+  geographies     String[]
+  ticketSizeMin   Float?
+  ticketSizeMax   Float?
+  aum             Float?
+  revenue         Float?
+  employees       Int?
+  
+  // Stammdaten
+  description     String?
+  address         String?
+  postalCode      String?
+  city            String?
+  country         String?
+  website         String?
+  type            OrganizationType @default(OTHER)
+  
+  contacts        Contact[]
+  investorDeals   DealInvestor[]
+  tags            TagAssignment[]
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+enum OrganizationType {
+  TARGET
+  BUYER
+  VC
+  PE_FUND
+  OTHER
+}
+
+// ============================================================
+// CONTACTS
+// ============================================================
+model Contact {
+  id              String         @id @default(cuid())
+  title           String?
+  firstName       String
+  lastName        String
+  email           String?        @unique
+  phone           String?
+  role            String?
+  
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id])
+  
+  connectionsFrom ContactConnection[] @relation("ConnectionFrom")
+  connectionsTo   ContactConnection[] @relation("ConnectionTo")
+  
+  internalOwnerId String?
+  internalOwner   User?          @relation("ContactOwner", fields: [internalOwnerId], references: [id])
+  
+  deals           Deal[]         @relation("DealLead")
+  tasks           Task[]         @relation("ContactTasks")
+  activities      Activity[]
+  comments        Comment[]
+  investorDeals   DealInvestor[]
+  tags            TagAssignment[]
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model ContactConnection {
+  id              String         @id @default(cuid())
+  fromId          String
+  toId            String
+  type            String         @default("INTRODUCED_BY")
+  
+  from            Contact        @relation("ConnectionFrom", fields: [fromId], references: [id])
+  to              Contact        @relation("ConnectionTo", fields: [toId], references: [id])
+  
+  @@unique([fromId, toId])
+}
+
+// ============================================================
+// DEALS
+// ============================================================
+model Deal {
+  id              String         @id @default(cuid())
+  name            String
+  type            DealType
+  status          DealStatus     @default(ACTIVE)
+  description     String?
+  website         String?
+  
+  leadId          String?
+  lead            Contact?       @relation("DealLead", fields: [leadId], references: [id])
+  
+  // Financials
+  expectedValue   Float?
+  probability     Float?         @default(0.1)
+  feeRetainer     Float?
+  feeSuccess      Float?
+  
+  // Target KPIs
+  targetRevenue       Float?
+  targetEbitda        Float?
+  targetEmployees     Int?
+  targetSubIndustry   String?
+  ownerStructure      OwnerStructure?
+  
+  // Pipeline
+  stage           DealStage      @default(PITCH)
+  projectStep     ProjectStep    @default(PITCH)
+  history         DealPipelineHistory[]
+  
+  // Relations
+  investors       DealInvestor[]
+  documents       Document[]
+  documentLinks   DocumentLink[]
+  tasks           Task[]
+  activities      Activity[]
+  tags            TagAssignment[]
+  calendarEvents  CalendarEvent[]
+  teamMembers     DealTeamMember[]
+  comments        Comment[]
+  stageMemberships DealStageMember[]
+  
+  // Client Portal
+  clientPortalEnabled  Boolean   @default(false)
+  clientPortalPassword String?
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Archive / Outcome Data
+  isSuccessful         Boolean?
+  finalSuccessFee      Float?
+  archiveDestination   String?
+}
+
+enum DealType {
+  SELL_SIDE
+  BUY_SIDE
+  MERGER
+  CAPITAL_RAISE
+}
+
+enum DealStatus {
+  ACTIVE
+  ON_HOLD
+  CLOSED_WON
+  CLOSED_LOST
+  LEAD
+}
+
+enum DealStage {
+  PITCH
+  MANDATE
+  CLOSING
+}
+
+enum ProjectStep {
+  PITCH
+  KICKOFF
+  LL
+  TEASER
+  NDA
+  IM
+  PROZESSBRIEF
+  MP
+  NBO
+  SIGNING_CLOSING
+}
+
+enum OwnerStructure {
+  FOUNDER_LED
+  FAMILY_OWNED
+  PE_BACKED
+  CORPORATE
+  PUBLIC
+  OTHER
+}
+
+model DealPipelineHistory {
+  id              String         @id @default(cuid())
+  dealId          String
+  deal            Deal           @relation(fields: [dealId], references: [id])
+  stage           DealStage
+  enteredAt       DateTime       @default(now())
+  exitedAt        DateTime?
+}
+
+// ============================================================
+// DEAL STAGE MEMBERS (TEAM PER PHASE)
+// ============================================================
+model DealStageMember {
+  id              String         @id @default(cuid())
+  dealId          String
+  deal            Deal           @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  step            ProjectStep
+  
+  createdAt       DateTime       @default(now())
+  
+  @@unique([dealId, userId, step])
+}
+
+// ============================================================
+// DEAL TEAM MEMBERS
+// ============================================================
+model DealTeamMember {
+  id              String         @id @default(cuid())
+  dealId          String
+  deal            Deal           @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role            DealTeamRole   @default(SUPPORT)
+  
+  createdAt       DateTime       @default(now())
+  
+  @@unique([dealId, userId])
+}
+
+enum DealTeamRole {
+  LEAD_ADVISOR
+  SUPPORT
+  ANALYST
+  PARTNER
+}
+
+// ============================================================
+// DEAL INVESTORS (LONGLIST)
+// ============================================================
+
+enum InvestorType {
+  STRATEGIC
+  FINANCIAL
+  CONSULTANT
+  OTHER
+}
+
+model DealInvestor {
+  id              String         @id @default(cuid())
+  dealId          String
+  deal            Deal           @relation(fields: [dealId], references: [id])
+  
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  
+  contactId       String?
+  contact         Contact?       @relation(fields: [contactId], references: [id])
+
+  status          InvestorStatus @default(LONGLIST)
+  type            InvestorType   @default(STRATEGIC)
+  feedback        String?
+
+  passReason      String?
+  clientFeedback  String?
+  
+  // Outreach tracking
+  contactedVia    String?
+  emailSubject    String?
+  emailBody       String?
+  emailSentAt     DateTime?
+  responseAt      DateTime?
+  
+  // Detailed Milestone Tracking
+  ndaSentAt       DateTime?
+  ndaSignedAt     DateTime?
+  ndaRejectedAt   DateTime?
+  
+  imSentAt        DateTime?
+  imRejectedAt    DateTime?
+  
+  notes           String?
+  priority        Int            @default(0)
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([dealId, organizationId])
+}
+
+enum InvestorStatus {
+  LONGLIST
+  SHORTLIST
+  CONTACTED
+  NDA_SENT
+  NDA_SIGNED
+  IM_SENT
+  PROCESS_LETTER_SENT
+  BID_RECEIVED
+  DROPPED
+}
+
+// ============================================================
+// DOCUMENTS (Legacy model kept for compatibility)
+// ============================================================
+model Document {
+  id              String         @id @default(cuid())
+  name            String
+  path            String
+  type            DocumentType
+  version         Int            @default(1)
+  status          DocumentStatus @default(DRAFT)
+  
+  dealId          String?
+  deal            Deal?          @relation(fields: [dealId], references: [id])
+  
+  createdAt       DateTime       @default(now())
+}
+
+enum DocumentType {
+  TEASER
+  IM
+  PROCESS_LETTER
+  NDA
+  DD_DOCUMENT
+  OTHER
+}
+
+enum DocumentStatus {
+  DRAFT
+  REVIEW
+  FINAL
+}
+
+// ============================================================
+// DOCUMENT LINKS (SharePoint/Cloud)
+// ============================================================
+model DocumentLink {
+  id              String         @id @default(cuid())
+  name            String
+  url             String
+  type            DocumentType   @default(OTHER)
+  description     String?
+  version         String?        @default("v1")
+  status          DocumentStatus @default(DRAFT)
+  
+  dealId          String
+  deal            Deal           @relation(fields: [dealId], references: [id])
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+// ============================================================
+// TASKS
+// ============================================================
+model Task {
+  id              String         @id @default(cuid())
+  title           String
+  description     String?
+  dueDate         DateTime?
+  isCompleted     Boolean        @default(false)
+  priority        TaskPriority   @default(MEDIUM)
+  category        String?
+  
+  dealId          String?
+  deal            Deal?          @relation(fields: [dealId], references: [id])
+  
+  contactId       String?
+  contact         Contact?       @relation("ContactTasks", fields: [contactId], references: [id])
+  
+  assignedToId    String?
+  assignedTo      User?          @relation(fields: [assignedToId], references: [id])
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// ============================================================
+// ACTIVITIES
+// ============================================================
+model Activity {
+  id              String         @id @default(cuid())
+  type            String
+  content         String
+  
+  contactId       String?
+  contact         Contact?       @relation(fields: [contactId], references: [id])
+
+  dealId          String?
+  deal            Deal?          @relation(fields: [dealId], references: [id])
+  
+  userId          String?
+  user            User?          @relation("UserActivities", fields: [userId], references: [id])
+  
+  createdAt       DateTime       @default(now())
+}
+
+// ============================================================
+// TAGS
+// ============================================================
+model Tag {
+  id              String         @id @default(cuid())
+  name            String         @unique
+  color           String         @default("#6366f1")
+  assignments     TagAssignment[]
+}
+
+model TagAssignment {
+  id              String         @id @default(cuid())
+  tagId           String
+  tag             Tag            @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  
+  dealId          String?
+  deal            Deal?          @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  
+  organizationId  String?
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  contactId       String?
+  contact         Contact?       @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime       @default(now())
+  
+  @@unique([tagId, dealId])
+  @@unique([tagId, organizationId])
+  @@unique([tagId, contactId])
+}
+
+// ============================================================
+// CALENDAR
+// ============================================================
+model CalendarEvent {
+  id              String         @id @default(cuid())
+  title           String
+  description     String?
+  startDate       DateTime
+  endDate         DateTime?
+  allDay          Boolean        @default(false)
+  type            EventType      @default(MEETING)
+  location        String?
+  
+  dealId          String?
+  deal            Deal?          @relation(fields: [dealId], references: [id])
+  
+  userId          String?
+  user            User?          @relation(fields: [userId], references: [id])
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+enum EventType {
+  MEETING
+  CALL
+  DEADLINE
+  MILESTONE
+  OTHER
+}
+
+// ============================================================
+// EMAIL TEMPLATES
+// ============================================================
+model EmailTemplate {
+  id              String         @id @default(cuid())
+  name            String
+  subject         String
+  body            String
+  type            String         @default("OUTREACH")
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+// ============================================================
+// COMMENTS & NOTIFICATIONS
+// ============================================================
+model Comment {
+  id              String         @id @default(cuid())
+  content         String
+  
+  userId          String
+  user            User           @relation(fields: [userId], references: [id])
+  
+  dealId          String?
+  deal            Deal?          @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  
+  step            ProjectStep?
+  
+  contactId       String?
+  contact         Contact?       @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Notification {
+  id              String           @id @default(cuid())
+  type            NotificationType
+  content         String
+  read            Boolean          @default(false)
+  link            String?
+  
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime         @default(now())
+}
+
+enum NotificationType {
+  MENTION
+  TASK_ASSIGNED
+  DEAL_UPDATE
+  OTHER
+}
+
+
